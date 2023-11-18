@@ -1,3 +1,5 @@
+using System.Xml.Schema;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,10 +16,20 @@ public class Turret : MonoBehaviour
     [SerializeField] private float targetingRange = 3f;
     [SerializeField] private float rotationSpeed = 200f;
     [SerializeField] private float bulletPerSeconds = 1f;
+    [SerializeField] private int baseUpgradeCost = 100;
     
+    private float bpsBase;
+    private float targetingRangeBase;
     private Transform target;
     private float timeUntilFire;
-
+    private int level = 1;
+    private float lastClickTime = 0f;
+    private float doubleClickTimeThreshold = 0.3f;
+    private void Start()
+    {
+        bpsBase = bulletPerSeconds;
+        targetingRangeBase = targetingRange;
+    }
     private void Update()
     {
         if (target == null) {
@@ -36,6 +48,23 @@ public class Turret : MonoBehaviour
                 timeUntilFire = 0f;
             }
         }
+        if (Input.GetMouseButtonDown(0)) {
+            float timeSinceLastClick = Time.time - lastClickTime;
+            if (timeSinceLastClick <= doubleClickTimeThreshold)
+                Upgrade();
+            lastClickTime = Time.time;
+        }
+    }
+    private void Upgrade()
+    {
+        int cost = Mathf.RoundToInt(baseUpgradeCost * Mathf.Pow(level, 0.8f));
+        if (cost > LevelManager.main.currency) return;
+
+        LevelManager.main.SpendCurrency(cost);
+        level++;
+
+        bulletPerSeconds = bpsBase * Mathf.Pow(level, 0.6f);
+        targetingRange = targetingRangeBase * Mathf.Pow(level, 0.4f);
     }
     private void Shoot()
     {
